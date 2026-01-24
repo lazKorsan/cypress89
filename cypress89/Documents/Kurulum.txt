@@ -1,0 +1,61 @@
+///<reference types="cypress" />
+
+
+CYPRESS 89 PROJESİ - MODERN HİBRİT KURULUM REHBERİ (Cucumber + Studio + Esbuild)
+Tarih: Bugün
+Durum: Başarılı
+
+Bu doküman, Cypress99 projesinden sonra kurulan Cypress89 projesinin kurulum adımlarını ve kritik yapılandırmalarını içerir.
+
+1. AMAÇ
+   - Hem BDD (Cucumber .feature) hem de Standart Cypress (.cy.js) testlerinin aynı anda çalışabilmesi (Hibrit Yapı).
+   - Cypress Studio (Record) özelliğinin aktif edilmesi.
+   - Esbuild kullanılarak testlerin çok hızlı derlenmesi.
+
+2. KURULAN PAKETLER (package.json)
+   Aşağıdaki paketler devDependencies olarak eklendi:
+   - @badeball/cypress-cucumber-preprocessor (Cucumber desteği için)
+   - @bahmutov/cypress-esbuild-preprocessor (Hızlı derleme için)
+   - esbuild (Derleyici)
+   - cypress (Ana paket)
+
+3. KRİTİK YAPILANDIRMA (cypress.config.js)
+   Dosya içeriği şu şekilde ayarlandı:
+
+   - experimentalStudio: true  -> Cypress Studio özelliğini açar.
+   - specPattern: "**/*.{cy.js,feature}" -> Hem .feature hem .cy.js dosyalarını test olarak görür.
+   - sourcemap: "inline" -> BU ÇOK ÖNEMLİ! Esbuild kullanırken Studio'nun çalışması için kaynak haritasının (source map) kodun içine gömülmesi gerekir. Aksi takdirde Studio hata verir.
+
+4. CUCUMBER AYARLARI (package.json)
+   Step dosyalarının nerede olduğunu belirtmek için package.json altına şu ayar eklendi:
+
+   "cypress-cucumber-preprocessor": {
+     "stepDefinitions": [
+       "cypress/e2e/CucumberTests/Steps/**/*.{js,ts}"
+     ]
+   }
+
+5. KLASÖR YAPISI
+   - cypress/e2e/CucumberTests/Features -> .feature dosyaları (Gherkin senaryoları)
+   - cypress/e2e/CucumberTests/Steps    -> .js step definition dosyaları
+   - cypress/e2e/ManuelTestSpecs        -> Standart .cy.js testleri (Studio ile kaydedilenler buraya)
+
+6. KARŞILAŞILAN SORUNLAR VE ÇÖZÜMLERİ
+   - Sorun: Cypress Studio "Source maps are required" hatası verdi.
+   - Çözüm: cypress.config.js içinde createBundler fonksiyonuna { sourcemap: "inline" } parametresi eklendi.
+
+   - Sorun: "Invalid option in context() call: esbuildOptions" hatası.
+   - Çözüm: sourcemap ayarı esbuildOptions içine değil, doğrudan createBundler objesinin içine yazıldı.
+
+7. ÖZEL KOMUTLAR (Custom Commands)
+   - cypress/support/commands.js dosyasına cy.login() komutu eklendi.
+   - cy.session() kullanılarak login işlemi optimize edildi (Cookie cache).
+
+8. GITHUB HAZIRLIĞI
+   - .gitignore dosyası oluşturuldu ve node_modules, cypress/videos gibi gereksiz dosyalar hariç tutuldu.
+
+9. CYPRESS STUDIO (KAYIT) ÖZELLİĞİ HAKKINDA ÖNEMLİ NOTLAR
+   - Deneysel Özellik: Cypress Studio henüz "experimental" aşamasındadır. Bu yüzden cypress.config.js içinde "experimentalStudio: true" ayarı ile manuel olarak açılması gerekir.
+   - Kısıtlamalar: Studio özelliği SADECE standart Cypress test dosyalarında (.cy.js) çalışır.
+   - Cucumber Desteği Yok: Cucumber (.feature) dosyaları üzerinde "Add Commands to Test" (Sihirbaz Değneği) ikonu ÇIKMAZ. Feature dosyaları sadece metin tabanlı senaryolardır, bu yüzden Studio bunları kaydedemez veya düzenleyemez.
+   - Çalışma Yöntemi: Eğer Studio kullanmak istiyorsanız, önce ManuelTestSpecs altında bir .cy.js dosyasında kaydınızı yapın, kodları oradan alıp Step Definition dosyalarınıza kopyalayın.

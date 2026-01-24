@@ -1,0 +1,109 @@
+CYPRESS PROJESİ KURULUM REHBERİ (Cucumber + Studio + Real Events)
+===================================================================
+Hedef: Hem BDD (Cucumber) hem de Manuel Test/Studio özelliklerinin (Record/Playback) aynı projede sorunsuz çalışması.
+
+ADIM 1: PROJE BAŞLATMA VE PAKETLERİN KURULUMU
+-------------------------------------------------------------------
+1. Yeni bir klasör oluşturun (örn: cypress79) ve içinde terminali açın.
+2. package.json oluşturun:
+   npm init -y
+
+3. Gerekli paketleri (uyumlu sürümlerle) yükleyin:
+   npm install --save-dev cypress@13.6.0 @badeball/cypress-cucumber-preprocessor@20.0.0 @bahmutov/cypress-esbuild-preprocessor@2.2.0 esbuild@0.19.5 cypress-real-events@1.11.0
+
+ADIM 2: CYPRESS İLK AÇILIŞ
+-------------------------------------------------------------------
+1. Cypress'i açarak klasör yapısının oluşmasını sağlayın:
+   npx cypress open
+2. "E2E Testing"i seçin, konfigürasyon dosyalarının oluşmasına izin verin ve tarayıcıyı kapatın.
+
+ADIM 3: package.json AYARLARI
+-------------------------------------------------------------------
+package.json dosyasını açın ve şu eklemeleri yapın:
+
+1. "cypress-cucumber-preprocessor" ayarını en alta ekleyin:
+   "cypress-cucumber-preprocessor": {
+     "stepDefinitions": [
+       "cypress/e2e/StepDefinitions/**/*.{js,ts}"
+     ]
+   }
+
+ADIM 4: cypress.config.js YAPILANDIRMASI (EN ÖNEMLİ KISIM)
+-------------------------------------------------------------------
+Cypress Studio'nun çalışması için .cy.js dosyalarının Cucumber işleminden geçmemesi gerekir.
+Aşağıdaki kodu cypress.config.js dosyasına yapıştırın:
+
+const { defineConfig } = require("cypress");
+const createBundler = require("@bahmutov/cypress-esbuild-preprocessor");
+const { addCucumberPreprocessorPlugin } = require("@badeball/cypress-cucumber-preprocessor");
+const { createEsbuildPlugin } = require("@badeball/cypress-cucumber-preprocessor/esbuild");
+
+module.exports = defineConfig({
+  e2e: {
+    experimentalStudio: true, // Studio özelliğini açar
+    specPattern: "**/*.{cy.js,feature}", // Hem normal testleri hem feature'ları görür
+    async setupNodeEvents(on, config) {
+      // Cucumber plugin'ini ekle
+      await addCucumberPreprocessorPlugin(on, config);
+
+      // 1. Cucumber (.feature) dosyaları için Bundler
+      const cucumberBundler = createBundler({
+        plugins: [createEsbuildPlugin(config)],
+      });
+
+      // 2. Standart (.cy.js) dosyaları için SADE Bundler (Studio için şart)
+      const plainBundler = createBundler({
+        sourcemap: "inline" // Studio'nun kodu okuyabilmesi için gerekli
+      });
+
+      // Dosya uzantısına göre doğru derleyiciyi seç
+      on("file:preprocessor", (file) => {
+        if (file.filePath.endsWith(".feature")) {
+          return cucumberBundler(file);
+        }
+        // .cy.js dosyaları buradan geçer, böylece Studio bozulmaz
+        return plainBundler(file);
+      });
+
+      return config;
+    },
+  },
+});
+
+ADIM 5: SUPPORT DOSYALARI (Hover ve Komutlar)
+-------------------------------------------------------------------
+1. cypress/support/e2e.js dosyasını açın ve şunu ekleyin:
+   import 'cypress-real-events/support';
+   import './commands';
+
+2. cypress/support/commands.js dosyasına şu faydalı komutları ekleyin:
+
+   // Hover Komutu
+   Cypress.Commands.add('hover', { prevSubject: true }, (subject) => {
+     cy.wrap(subject).realHover();
+   });
+
+   // Dropdown Seçimi (Tıklamalı)
+   Cypress.Commands.add('selectDropdown', (triggerSelector, optionText) => {
+     cy.get(triggerSelector).click();
+     cy.contains(optionText).click();
+   });
+
+   // Hover ve Tıkla (Menüler için)
+   Cypress.Commands.add('hoverAndClick', (hoverSelector, clickSelector) => {
+     cy.get(hoverSelector).realHover();
+     cy.get(clickSelector).should('be.visible').click();
+   });
+
+ADIM 6: KLASÖR YAPISI DÜZENİ
+-------------------------------------------------------------------
+Şu klasörleri oluşturun:
+- cypress/e2e/Features (Feature dosyaları buraya)
+- cypress/e2e/StepDefinitions (Step dosyaları buraya)
+- cypress/e2e/ManuelTests (Normal .cy.js testleri buraya - Studio burada çalışacak)
+
+SONUÇ
+-------------------------------------------------------------------
+Artık:
+1. .feature dosyalarınız Cucumber ile çalışacak.
+2. .cy.js dosyalarınızda "Add Commands to Test" (Sihirli Değnek) ikonu çıkacak ve Studio çalışacak.
