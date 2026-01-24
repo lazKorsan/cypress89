@@ -18,3 +18,24 @@ export const loginToWebsite = (email = defaultEmail, password = defaultPassword)
   cy.get('[name="password"]').click().type(password);
   cy.get('button.btn').click();
 };
+
+export const LoyalSearchMethod = (searchValue) => {
+  cy.visit('https://qa.loyalfriendcare.com/en');
+
+  // Arama kutusuna tıkla ve parametre olarak gelen değeri yaz
+  cy.get('#hero_video [name="search"]').click({force: true});
+
+  // Parametre olarak gelen searchValue'yu kullanıyoruz
+  cy.get('#hero_video [name="search"]').type(`${searchValue}{enter}`);
+
+  // Ürünlerin listelenmesini bekle
+  cy.url().should('include', 'search');
+
+  // Ürün sayısını bul ve yazdır
+  cy.get('.strip').should('have.length.gt', 0)
+    .then(($products) => {
+      const productCount = $products.length;
+      cy.log('Bulunan Ürün Sayısı: ' + productCount);
+      console.log('Bulunan Ürün Sayısı: ' + productCount);
+    });
+};
