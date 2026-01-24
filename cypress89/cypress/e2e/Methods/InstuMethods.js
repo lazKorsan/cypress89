@@ -11,7 +11,8 @@ import { InstuData } from '../../../TestData';
 // Fonksiyonu export ediyoruz.
 // Eğer parametre verilmezse, TestData içindeki varsayılan değerleri kullanır.
 export const loginToInstu = (email = InstuData.email, password = InstuData.password) => {
-  cy.visit('https://qa.instulearn.com/login');
+  cy.visit('https://qa.instulearn.com/login'); // bu satır cucumber için fazlallık olabilir ama önemi yoktur
+
 
   // Parametre olarak gelen email ve password'ü kullanıyoruz
   cy.get('[name="email"]').click().type(email);
