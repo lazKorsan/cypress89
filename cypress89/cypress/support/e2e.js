@@ -17,6 +17,7 @@
 import './commands'
 import "cypress-real-events/support"; // Hover ve gerçek eventler için
 
+
 // Global olarak "scrollbar is not a function" hatasını yoksay
 Cypress.on('uncaught:exception', (err, runnable) => {
   if (err.message.includes('scrollbar is not a function')) {

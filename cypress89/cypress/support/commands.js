@@ -62,3 +62,5 @@ Cypress.Commands.add('hoverAndClick', (hoverSelector, clickSelector) => {
   cy.get(hoverSelector).realHover();
   cy.get(clickSelector).should('be.visible').click();
 });
+
+
