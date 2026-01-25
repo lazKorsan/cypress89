@@ -8,13 +8,20 @@ Cypress.on('uncaught:exception', (err, runnable) => {
 // TestData.js dosyasından InstuData'yı import et
 import { InstuData } from '../../../TestData';
 
-// Fonksiyonu export ediyoruz.
-// Eğer parametre verilmezse, TestData içindeki varsayılan değerleri kullanır.
+// 1. Siteye Gitme Metodu (Yeni Eklenen)
+export const visitInstu = () => {
+  cy.visit(InstuData.instuUrl);
+};
+
+// 2. Login Metodu
 export const loginToInstu = (email = InstuData.email, password = InstuData.password) => {
-  cy.visit('https://qa.instulearn.com/login'); // bu satır cucumber için fazlallık olabilir ama önemi yoktur
+  // Eğer zaten login sayfasında değilsek login sayfasına git
+  cy.url().then(url => {
+    if(!url.includes('/login')) {
+       cy.visit(InstuData.instuLoginUrl);
+    }
+  });
 
-
-  // Parametre olarak gelen email ve password'ü kullanıyoruz
   cy.get('[name="email"]').click().type(email);
   cy.get('[name="password"]').click().type(password);
   cy.get('#app button.btn-block').click();
