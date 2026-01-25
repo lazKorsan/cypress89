@@ -7,6 +7,8 @@ export const LoyalData = {
 };
 
 export const InstuData = {
+  instuUrl: 'https://qa.instulearn.com/',
+  instuLoginUrl: 'https://qa.instulearn.com/login',
   email: 'lazKorsan240120262147@gmail.com',
   password: 'Query.2026'
 };
